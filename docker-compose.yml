@@ -1,0 +1,31 @@
+version: '3.8'
+
+services:
+  frontend:
+    build:
+      context: ./frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+
+  backend:
+    build:
+      context: ./backend
+    ports:
+      - "5000:5000"
+      - "8888:8888"
+      - "1883:1883"
+    environment:
+      - ML_API_URL=http://ml-service:8000
+      - AWS_REGION=us-east-1
+      - DYNAMODB_TABLE=VehicleTelemetry
+      - SECRET_TOKEN=${SECRET_TOKEN:-super-secret-iot-token-2024}
+    depends_on:
+      - ml-service
+
+  ml-service:
+    build:
+      context: ./ml-service
+    ports:
+      - "8000:8000"
