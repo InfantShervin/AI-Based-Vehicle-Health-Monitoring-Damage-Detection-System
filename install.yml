@@ -1,0 +1,62 @@
+---
+- name: Setup Vehicle Health App Server
+  hosts: all
+  become: yes # Run as root user
+  tasks:
+    - name: Ensure cloud-guest-utils is installed
+      apt:
+        name: cloud-guest-utils
+        state: present
+        update_cache: yes
+
+    - name: Expand partition to use full EBS volume size
+      shell: |
+        sudo growpart /dev/nvme0n1 1 || true
+        # Handle both ext4 (resize2fs) and xfs (xfs_growfs) filesystems
+        sudo resize2fs /dev/nvme0n1p1 || true
+        sudo xfs_growfs / || true
+      ignore_errors: yes
+
+    - name: Show Disk Space for debugging
+      command: df -h /
+      register: disk_info
+
+    - name: Debug disk space
+      debug:
+        var: disk_info.stdout_lines
+
+    - name: Install Docker and modern requirements
+      apt:
+        name: 
+          - docker.io
+          - docker-compose-v2
+          - git
+        state: present
+    
+    - name: Start Docker Service
+      service:
+        name: docker
+        state: started
+        enabled: yes
+
+    - name: Clone repository to Production
+      git:
+        repo: https://github.com/InfantShervin/AI-Based-Vehicle-Health-Monitoring-Damage-Detection-System.git
+        dest: /home/ubuntu/app
+        version: main
+        force: yes
+
+    - name: Clear unused Docker data to free space
+      command: docker system prune -af
+      ignore_errors: yes
+
+    - name: Stop and remove existing containers for a clean start
+      command: docker compose down --remove-orphans
+      args:
+        chdir: /home/ubuntu/app
+      ignore_errors: yes
+
+    - name: Build and Spin Up Application
+      command: docker compose up --build -d
+      args:
+        chdir: /home/ubuntu/app
