@@ -4,7 +4,7 @@ import os
 import glob
 import xgboost as xgb
 import joblib
-from sklearn.model_selection import train_train_split, GridSearchCV # wait I will just use train_test_split
+from sklearn.model_selection import train_test_split, GridSearchCV
 from sklearn.metrics import mean_squared_error, r2_score
 from sklearn.model_selection import train_test_split
 

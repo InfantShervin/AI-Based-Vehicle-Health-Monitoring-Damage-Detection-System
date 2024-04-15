@@ -1,0 +1,144 @@
+<div class="min-h-screen p-8 flex items-center justify-center relative overflow-hidden"
+  [class.bg-emerald-950]="activeTab === 'live'">
+
+  <div
+    class="absolute top-[-10%] left-[-10%] w-96 h-96 bg-purple-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse"
+    [class.bg-emerald-500]="activeTab === 'live'"></div>
+  <div
+    class="absolute bottom-[-10%] right-[-10%] w-96 h-96 bg-blue-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse"
+    style="animation-delay: 2s;" [class.bg-green-500]="activeTab === 'live'"></div>
+
+  <div class="glass-panel rounded-3xl w-full max-w-6xl p-8 z-10 animate-slide-up transition-colors duration-1000">
+
+    <div class="text-center mb-10 relative">
+      <h1
+        class="text-4xl md:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500 mb-6 tracking-tight"
+        [class.from-emerald-400]="activeTab === 'live'">
+        {{ activeTab === 'live' ? 'Live Fleet Telemetry' : 'Vehicle Health & Damage AI' }}
+      </h1>
+
+      <div class="flex justify-center gap-4 mb-4">
+        <button type="button" (click)="switchTab('analysis')" class="px-6 py-2 rounded-xl border transition-all font-semibold" [ngClass]="activeTab === 'analysis' ? 'bg-white/10 border-blue-500' : 'border-white/10'">🔍 AI Analysis</button>
+        <button type="button" (click)="switchTab('live')" class="px-6 py-2 rounded-xl border transition-all font-semibold" [ngClass]="activeTab === 'live' ? 'bg-emerald-500/20 border-emerald-500' : 'border-white/10'">📡 Live Monitoring</button>
+      </div>
+    </div>
+
+    <div *ngIf="activeTab === 'analysis'" class="animate-fade-in">
+      <div *ngIf="!results" class="grid grid-cols-1 lg:grid-cols-2 gap-10">
+        <div class="flex flex-col h-full">
+          <label class="block text-sm font-medium text-gray-300 mb-2">Vehicle Image</label>
+          <div
+            class="flex-1 glass-input rounded-2xl w-full flex flex-col items-center justify-center p-8 relative cursor-pointer border focus-within:border-indigo-500 overflow-hidden hover:bg-black/30">
+            <input type="file" id="file" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20"
+              (change)="onFileSelected($event)">
+            <div *ngIf="!previewUrl" class="text-center pointer-events-none">
+              <svg class="mx-auto h-16 w-16 text-indigo-400 mb-4" fill="none" viewBox="0 0 48 48">
+                <path
+                  d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4M28 8h12a4 4 0 014 4v4m-4-8v8m-12 4h.02"
+                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+              <p class="text-sm font-semibold text-gray-300">Upload vehicle photo</p>
+            </div>
+            <img *ngIf="previewUrl" [src]="previewUrl" class="absolute inset-0 w-full h-full object-cover z-10">
+          </div>
+        </div>
+        <div class="flex flex-col gap-6">
+          <div><label class="block text-sm font-medium text-gray-300 mb-2">Temp (°C)</label><input type="number"
+              [(ngModel)]="temperature" class="glass-input w-full p-4 rounded-xl"></div>
+          <div><label class="block text-sm font-medium text-gray-300 mb-2">Voltage (V)</label><input type="number"
+              [(ngModel)]="voltage" class="glass-input w-full p-4 rounded-xl"></div>
+          <div><label class="block text-sm font-medium text-gray-300 mb-2">Cycles</label><input type="number"
+              [(ngModel)]="cycles" class="glass-input w-full p-4 rounded-xl"></div>
+          <button (click)="analyzeVehicle()" [disabled]="isLoading"
+            class="glow-button w-full py-4 rounded-xl font-bold mt-auto">{{ isLoading ? 'Processing...' : 'Analyze
+            Vehicle' }}</button>
+        </div>
+      </div>
+
+      <div *ngIf="results" class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div class="glass-input rounded-2xl p-6 flex flex-col items-center">
+          <h3 class="text-gray-400 text-sm uppercase mb-4">Health Score</h3>
+          <div class="text-5xl font-extrabold"
+            [style.color]="(results.final_health_score > 70) ? '#4ade80' : '#ef4444'">{{results.final_health_score}}%
+          </div>
+        </div>
+        <div class="glass-input rounded-2xl p-6 lg:col-span-2">
+          <h3 class="text-gray-400 text-sm uppercase mb-2">AI Diagnosis</h3>
+          <p class="text-2xl font-bold mb-4">{{results.damage_detection}}</p>
+          <div class="bg-black/20 p-4 rounded-xl text-sm italic text-gray-300">{{results.root_cause_explanation}}</div>
+        </div>
+        <div class="lg:col-span-3 flex justify-center mt-4">
+          <button (click)="reset()"
+            class="px-8 py-2 border border-white/20 rounded-xl hover:bg-white/10 transition-all">New Scan</button>
+        </div>
+      </div>
+    </div>
+
+    <div *ngIf="activeTab === 'live'" class="animate-fade-in">
+      <div class="grid grid-cols-1 lg:grid-cols-4 gap-4 mb-8">
+        <div class="glass-input p-6 rounded-2xl border border-emerald-500/20">
+          <span class="text-xs text-emerald-400 font-bold uppercase tracking-widest">Temperature</span>
+          <div class="text-3xl font-mono">{{temperature || '--'}}°C</div>
+        </div>
+        <div class="glass-input p-6 rounded-2xl border border-emerald-500/20">
+          <span class="text-xs text-emerald-400 font-bold uppercase tracking-widest">Voltage</span>
+          <div class="text-3xl font-mono">{{voltage || '--'}}V</div>
+        </div>
+        <div class="glass-input p-6 rounded-2xl border border-emerald-500/20">
+          <span class="text-xs text-emerald-400 font-bold uppercase tracking-widest">SoH (Predictive)</span>
+          <div class="text-3xl font-mono text-emerald-300">{{results?.final_health_score || '--'}}%</div>
+        </div>
+        <div class="glass-input p-6 rounded-2xl border border-emerald-500/20">
+          <span class="text-xs text-emerald-400 font-bold uppercase tracking-widest">AWS IoT Status</span>
+          <div class="text-sm font-bold flex items-center gap-2 mt-2">
+            <span class="w-3 h-3 rounded-full transition-all duration-300"
+                  [class.bg-emerald-500]="!isDataPulsing"
+                  [class.bg-white]="isDataPulsing"
+                  [class.scale-150]="isDataPulsing"></span> 
+            {{ isDataPulsing ? 'RECEIVING...' : 'CONNECTED' }}
+          </div>
+        </div>
+      </div>
+
+      <div class="glass-input rounded-3xl p-6 mb-8 border border-emerald-500/40 relative h-[400px]">
+        <canvas id="telemetryGraph"></canvas>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="bg-indigo-950/40 border border-indigo-500/30 p-6 rounded-2xl">
+          <h4 class="text-indigo-300 font-bold mb-3 flex items-center gap-2">
+            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+              <path
+                d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z" />
+            </svg>
+            CloudWatch Dashboard
+          </h4>
+          <p class="text-sm text-indigo-200/70 mb-4">View historical performance metrics in your AWS Console.</p>
+          <ol class="text-xs text-indigo-300/80 space-y-2 list-decimal ml-4">
+            <li>Login to AWS Console.</li>
+            <li>Navigate to CloudWatch > Dashboards.</li>
+            <li>Select "Vehicle-Health-Dashboard".</li>
+          </ol>
+        </div>
+        <div class="bg-emerald-950/40 border border-emerald-500/30 p-6 rounded-2xl">
+          <h4 class="text-emerald-300 font-bold mb-3 flex items-center gap-2">
+            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd"
+                d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z"
+                clip-rule="evenodd" />
+            </svg>
+            MQTT Telemetry
+          </h4>
+          <p class="text-sm text-emerald-200/70 mb-4">Infrastructure running MQTT over TLS (Port 8883) for connectivity.
+          </p>
+          <div class="flex gap-2">
+            <span class="text-[10px] bg-emerald-500/20 px-2 py-1 rounded-md text-emerald-400 uppercase font-black">AWS
+              IoT Core</span>
+            <span class="text-[10px] bg-emerald-500/20 px-2 py-1 rounded-md text-emerald-400 uppercase font-black">X.509
+              Signed</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
