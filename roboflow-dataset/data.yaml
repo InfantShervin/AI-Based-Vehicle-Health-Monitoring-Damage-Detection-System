@@ -1,0 +1,13 @@
+train: ../train/images
+val: ../valid/images
+test: ../test/images
+
+nc: 12
+names: ['Broken part', 'Corrosion', 'Cracked', 'Dent', 'Flaking', 'Missing part', 'Paint chip', 'Paint damage', 'Scratch', 'broken_lamp', 'broken_mirror', 'cracked_glass']
+
+roboflow:
+  workspace: infants-workspace
+  project: car-damages-kaggle-9pspq
+  version: 1
+  license: CC BY 4.0
+  url: https://universe.roboflow.com/infants-workspace/car-damages-kaggle-9pspq/dataset/1
